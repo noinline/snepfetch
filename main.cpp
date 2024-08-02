@@ -1,3 +1,4 @@
+#include <cassert>
 #include <iostream>
 #include <sys/ioctl.h>
 
@@ -6,8 +7,8 @@ get_terminal_size(int &width, int &height)
 {
   struct winsize w;
   ioctl(fileno(stdout), TIOCGWINSZ, &w);
-  width = (int) (w.ws_col);
-  height = (int) (w.ws_row);
+  width = static_cast<int>(w.ws_col);
+  height = static_cast<int>(w.ws_row);
 }
 
 #include <fstream>
@@ -20,6 +21,7 @@ get_node_name()
 {
   struct utsname buffer;
   return (uname(&buffer) != 0) ? "" : std::string(buffer.nodename);
+  /* returns user's hostname */
 }
 
 std::string
@@ -27,6 +29,7 @@ get_kernel_ver()
 {
   struct utsname buffer;
   return (uname(&buffer) != 0) ? "" : std::string(buffer.release);
+  /* returns kernel release version */
 }
 
 std::string
@@ -34,6 +37,7 @@ get_user_name()
 {
   struct passwd *pw = getpwuid(static_cast<uid_t>(geteuid()));
   return (pw != nullptr) ? std::string(pw->pw_name) : "";
+  /* returns username */
 }
 
 std::string
@@ -41,6 +45,7 @@ get_home_dir()
 {
   struct passwd *pw = getpwuid(static_cast<uid_t>(geteuid()));
   return (pw != nullptr) ? std::string(pw->pw_dir) : "";
+  /* returns home directory */
 }
 
 std::string
@@ -48,6 +53,7 @@ get_shell()
 {
   struct passwd *pw = getpwuid(static_cast<uid_t>(geteuid()));
   return (pw != nullptr) ? std::string(pw->pw_shell) : "";
+  /* returns user's shell */
 }
 
 std::string
@@ -55,6 +61,7 @@ get_terminal_emulator()
 {
   const std::string output = getenv("TERM");
   return output.c_str();
+  /* returns terminal */
 }
 
 std::string
@@ -62,7 +69,7 @@ get_file_content(std::istream &s, std::string output)
 {
   if (!s.good())
     return "";
-  std::string temp{""};
+  std::string temp{};
   while (getline(s, temp))
     output += temp + '\n';
   return output.c_str();
@@ -87,7 +94,10 @@ get_system_name()
   }
   pclose(name_pipe);
 
-  std::regex  system_name_pattern("Distributor ID:\\s*(\\w+)");
+  std::regex system_name_pattern(
+      "Distributor ID:\\s*(\\w+)"); /* pattern that searches for any
+                                       whitespaces/words after 'Distributor
+                                       ID'*/
   std::smatch matches;
   if (std::regex_search(name_output, matches, system_name_pattern))
     return matches.str(1);
@@ -115,7 +125,9 @@ get_window_manager()
   pclose(check_pipe);
 
   std::regex window_id_pattern(
-      "_NET_SUPPORTING_WM_CHECK\\(WINDOW\\): window id \\# 0x([a-fA-F0-9]+)");
+      "_NET_SUPPORTING_WM_CHECK\\(WINDOW\\): window id \\# "
+      "0x([a-fA-F0-9]+)"); /* pattern that searches for any lower/upper case
+                              words and digits after 'window id #' */
   std::smatch matches;
   if (std::regex_search(check_output, matches, window_id_pattern)) {
     std::string window_id_pattern = matches.str(1);
@@ -132,7 +144,10 @@ get_window_manager()
     }
     pclose(name_pipe);
 
-    std::regex name_pattern("_NET_WM_NAME\\(UTF8_STRING\\) = \"([^\"]+)\"");
+    std::regex name_pattern(
+        "_NET_WM_NAME\\(UTF8_STRING\\) = \"([^\"]+)\""); /* pattern that matches
+                                                            everything within
+                                                            '""' after = sign */
     if (std::regex_search(name_output, matches, name_pattern))
       return matches.str(1);
   }
@@ -145,10 +160,13 @@ get_window_manager()
 void
 create_directory(const std::string &dir)
 {
-  struct stat st = {0};
+  struct stat st = {};
+  /* 'stat' used to check if directory already exists, if it's not then we
+   * proceed to mkdir*/
   if (stat(dir.c_str(), &st) != -1)
     return;
 
+  /* 'mkdir' if directory isn't initialized yet */
   int result = mkdir(dir.c_str(), 0700);
   if (result == -1)
     return;
@@ -157,21 +175,43 @@ create_directory(const std::string &dir)
 void
 print_image(int width, int height, const std::string &image_path)
 {
-  constexpr int xoffset = 2, yoffset = 0;
-  get_terminal_size(width, height);
+  constexpr int     xoffset = 2, yoffset = 0;
   const std::string command =
       "kitty +kitten icat --align left --place \"" + std::to_string(width) +
       "x" + std::to_string(height) + "@" + std::to_string(xoffset) + "x" +
       std::to_string(yoffset) + "\" \"" + image_path + "\"";
 
+  /* clear everything before calling 'command.c_str()', so we can print our
+   * necessary information later*/
   system("clear");
   system(command.c_str());
 }
 
+#include <cstring>
+
 void
-printf_tabbed(const std::string &str)
+printf_tabbed(const std::string &str, int scale)
 {
-  printf(" 			%s\n", str.c_str());
+  assert(scale >= 0);
+
+  int tabs{};
+
+  tabs = scale / 25;
+
+  std::string output{};
+
+  for (int i = 0; i < tabs; ++i)
+    output += "\t";
+
+  output += str;
+
+  printf("%s\n", output.c_str());
+}
+
+void
+ascii_printf_tabbed(const std::string &str)
+{
+  printf("\t\t\t\t%s\n", str.c_str());
 }
 
 std::string
@@ -234,6 +274,12 @@ print_kernel()
 int
 main(int argc, char *argv[])
 {
+  if (isatty(STDOUT_FILENO) != 1) {
+    fprintf(stderr, "stdout is not a terminal!\n");
+    fflush(stderr);
+    return 1;
+  }
+
   const std::string dir = get_home_dir() + "/.config/snepfetch/";
   create_directory(dir);
 
@@ -253,28 +299,39 @@ main(int argc, char *argv[])
     output = get_file_content(ascii_text, output);
     system("clear");
     printf("%s\n", output.c_str());
+    ascii_printf_tabbed(print_welcome());
+    ascii_printf_tabbed(print_system_name());
+    ascii_printf_tabbed(print_window_manager());
+    ascii_printf_tabbed(print_terminal());
+    ascii_printf_tabbed(print_kernel());
+    ascii_printf_tabbed(print_shell());
     ascii_text.close();
   } break;
   case 'i': {
     int               width = 0, height = 0;
-    const std::string image_path = dir + "chibi.png";
+    const std::string image_path = dir + "image.png";
+    get_terminal_size(width, height);
     print_image(width, height, dir);
-    printf_tabbed(print_welcome());
-    printf_tabbed(print_system_name());
-    printf_tabbed(print_window_manager());
-    printf_tabbed(print_terminal());
-    printf_tabbed(print_kernel());
-    printf_tabbed(print_shell());
+    printf_tabbed(print_welcome(), width);
+    printf_tabbed(print_system_name(), width);
+    printf_tabbed(print_window_manager(), width);
+    printf_tabbed(print_terminal(), width);
+    printf_tabbed(print_kernel(), width);
+    printf_tabbed(print_shell(), width);
     printf("\033[%iB\n", 1);
   } break;
   case 'h':
     printf("Usage:\n	"
-           "%s --ascii\n",
-           argv[0]);
+           "%s --ascii - prints info along with a neat ascii art.\n	"
+           "%s --image - same as --ascii but uses image.\n",
+           argv[0], argv[0]);
     break;
-  default:
-    printf("Invalid command! Consider using %s --help.\n", argv[0]);
-    break;
+  default: {
+    fprintf(stderr,
+            "Invalid/No argument specified! Consider using %s --help.\n",
+            argv[0]);
+    fflush(stderr);
+  } break;
   }
   return 0;
 }
