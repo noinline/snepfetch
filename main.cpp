@@ -71,7 +71,7 @@ get_file_content(std::istream &s, std::string output)
     return "";
   std::string temp{};
   while (getline(s, temp))
-    output += temp + '\n';
+    output.append(temp + '\n');
   return output.c_str();
 }
 
@@ -80,13 +80,13 @@ get_file_content(std::istream &s, std::string output)
 std::string
 get_system_name()
 {
-  std::string name_cmd = "lsb_release -a";
+  const std::string name_cmd = "lsb_release -a";
 
   FILE *name_pipe = popen(name_cmd.c_str(), "r");
   if (!name_pipe)
     return "";
 
-  std::string name_output;
+  std::string name_output{};
   while (!feof(name_pipe)) {
     char buffer[128];
     if (fgets(buffer, sizeof(buffer), name_pipe) != NULL)
@@ -94,29 +94,30 @@ get_system_name()
   }
   pclose(name_pipe);
 
-  std::regex system_name_pattern(
+  const std::regex system_name_pattern(
       "Distributor ID:\\s*(\\w+)"); /* pattern that searches for any
                                        whitespaces/words after 'Distributor
                                        ID'*/
-  std::smatch matches;
-  if (std::regex_search(name_output, matches, system_name_pattern))
-    return matches.str(1);
+  std::smatch matches{};
 
-  return "unknown";
+  return (std::regex_search(name_output, matches, system_name_pattern) == true)
+             ? matches.str(1)
+             : "unknown";
 }
 
 std::string
 get_window_manager()
 {
-  std::string check_cmd = "xprop -root _NET_SUPPORTING_WM_CHECK";
-  std::string name_cmd = "xprop -id $(xprop -root _NET_SUPPORTING_WM_CHECK | "
-                         "awk '{print $NF}') _NET_WM_NAME";
+  const std::string check_cmd = "xprop -root _NET_SUPPORTING_WM_CHECK";
+  const std::string name_cmd =
+      "xprop -id $(xprop -root _NET_SUPPORTING_WM_CHECK | "
+      "awk '{print $NF}') _NET_WM_NAME";
 
   FILE *check_pipe = popen(check_cmd.c_str(), "r");
   if (!check_pipe)
     return "";
 
-  std::string check_output;
+  std::string check_output{};
   while (!feof(check_pipe)) {
     char buffer[128];
     if (fgets(buffer, sizeof(buffer), check_pipe) != NULL)
@@ -124,11 +125,11 @@ get_window_manager()
   }
   pclose(check_pipe);
 
-  std::regex window_id_pattern(
+  const std::regex window_id_pattern(
       "_NET_SUPPORTING_WM_CHECK\\(WINDOW\\): window id \\# "
       "0x([a-fA-F0-9]+)"); /* pattern that searches for any lower/upper case
                               words and digits after 'window id #' */
-  std::smatch matches;
+  std::smatch matches{};
   if (std::regex_search(check_output, matches, window_id_pattern)) {
     std::string window_id_pattern = matches.str(1);
 
@@ -136,7 +137,7 @@ get_window_manager()
     if (!name_pipe)
       return "";
 
-    std::string name_output;
+    std::string name_output{};
     while (!feof(name_pipe)) {
       char buffer[128];
       if (fgets(buffer, sizeof(buffer), name_pipe) != NULL)
@@ -144,7 +145,7 @@ get_window_manager()
     }
     pclose(name_pipe);
 
-    std::regex name_pattern(
+    const std::regex name_pattern(
         "_NET_WM_NAME\\(UTF8_STRING\\) = \"([^\"]+)\""); /* pattern that matches
                                                             everything within
                                                             '""' after = sign */
@@ -160,7 +161,8 @@ get_window_manager()
 void
 create_directory(const std::string &dir)
 {
-  struct stat st = {};
+  struct stat st
+  {};
   /* 'stat' used to check if directory already exists, if it's not then we
    * proceed to mkdir*/
   if (stat(dir.c_str(), &st) != -1)
@@ -187,31 +189,23 @@ print_image(int width, int height, const std::string &image_path)
   system(command.c_str());
 }
 
-#include <cstring>
-
 void
-printf_tabbed(const std::string &str, int scale)
+printf_tabbed(const std::string &str, int scale, int divider)
 {
   assert(scale >= 0);
 
-  int tabs{};
-
-  tabs = scale / 25;
-
-  std::string output{};
+  const int                tabs = scale / divider;
+  std::vector<std::string> temp{};
 
   for (int i = 0; i < tabs; ++i)
-    output += "\t";
+    temp.push_back("\t");
+  temp.push_back(str);
 
-  output += str;
+  std::string output{};
+  for (const auto &it : temp)
+    output.append(it);
 
   printf("%s\n", output.c_str());
-}
-
-void
-ascii_printf_tabbed(const std::string &str)
-{
-  printf("\t\t\t\t%s\n", str.c_str());
 }
 
 std::string
@@ -293,18 +287,20 @@ main(int argc, char *argv[])
   int c = getopt_long(argc, argv, "aih", long_options, &option_index);
   switch (c) {
   case 'a': {
-    std::ifstream ascii_text;
-    std::string   output;
+    std::ifstream ascii_text{};
+    std::string   output{};
+    int           width = 0, height = 0;
+    get_terminal_size(width, height);
     ascii_text.open(dir + "ascii.txt");
     output = get_file_content(ascii_text, output);
     system("clear");
     printf("%s\n", output.c_str());
-    ascii_printf_tabbed(print_welcome());
-    ascii_printf_tabbed(print_system_name());
-    ascii_printf_tabbed(print_window_manager());
-    ascii_printf_tabbed(print_terminal());
-    ascii_printf_tabbed(print_kernel());
-    ascii_printf_tabbed(print_shell());
+    printf_tabbed(print_welcome(), width, 20);
+    printf_tabbed(print_system_name(), width, 20);
+    printf_tabbed(print_window_manager(), width, 20);
+    printf_tabbed(print_terminal(), width, 20);
+    printf_tabbed(print_kernel(), width, 20);
+    printf_tabbed(print_shell(), width, 20);
     ascii_text.close();
   } break;
   case 'i': {
@@ -312,12 +308,12 @@ main(int argc, char *argv[])
     const std::string image_path = dir + "image.png";
     get_terminal_size(width, height);
     print_image(width, height, dir);
-    printf_tabbed(print_welcome(), width);
-    printf_tabbed(print_system_name(), width);
-    printf_tabbed(print_window_manager(), width);
-    printf_tabbed(print_terminal(), width);
-    printf_tabbed(print_kernel(), width);
-    printf_tabbed(print_shell(), width);
+    printf_tabbed(print_welcome(), width, 25);
+    printf_tabbed(print_system_name(), width, 25);
+    printf_tabbed(print_window_manager(), width, 25);
+    printf_tabbed(print_terminal(), width, 25);
+    printf_tabbed(print_kernel(), width, 25);
+    printf_tabbed(print_shell(), width, 25);
     printf("\033[%iB\n", 1);
   } break;
   case 'h':
