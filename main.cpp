@@ -80,7 +80,7 @@ get_file_content(std::istream &s, std::string output)
 std::string
 get_system_name()
 {
-  const std::string name_cmd = "lsb_release -a";
+  const std::string name_cmd = "cat /etc/os-release";
 
   FILE *name_pipe = popen(name_cmd.c_str(), "r");
   if (!name_pipe)
@@ -95,9 +95,7 @@ get_system_name()
   pclose(name_pipe);
 
   const std::regex system_name_pattern(
-      "Distributor ID:\\s*(\\w+)"); /* pattern that searches for any
-                                       whitespaces/words after 'Distributor
-                                       ID'*/
+      "PRETTY_NAME=\"(.*?)\""); /* pattern that searches for any words in "" */
   std::smatch matches{};
 
   return (std::regex_search(name_output, matches, system_name_pattern) == true)
@@ -174,9 +172,23 @@ create_directory(const std::string &dir)
     return;
 }
 
-void
+bool
+file_exists(const std::string &dir)
+{
+  struct stat st
+  {};
+  /* in that 'lstat' used to check if file exists */
+  return (lstat(dir.c_str(), &st) != -1) ? true : false;
+}
+
+bool
 print_image(int width, int height, const std::string &image_path)
 {
+  if (!file_exists(image_path)) {
+    fprintf(stderr, "%s does not seem to exist.\n", image_path.c_str());
+    fflush(stderr);
+    return false;
+  }
   constexpr int     xoffset = 2, yoffset = 0;
   const std::string command =
       "kitty +kitten icat --align left --place \"" + std::to_string(width) +
@@ -187,6 +199,23 @@ print_image(int width, int height, const std::string &image_path)
    * necessary information later*/
   system("clear");
   system(command.c_str());
+  return true;
+}
+
+std::string
+print_ascii(const std::string &ascii_path)
+{
+  if (!file_exists(ascii_path)) {
+    fprintf(stderr, "%s does not seem to exist.\n", ascii_path.c_str());
+    fflush(stderr);
+    return "";
+  }
+  std::string   output{};
+  std::ifstream ascii_text{};
+  ascii_text.open(ascii_path);
+  output = get_file_content(ascii_text, output);
+  ascii_text.close();
+  return output.c_str();
 }
 
 void
@@ -271,6 +300,7 @@ main(int argc, char *argv[])
   if (isatty(STDOUT_FILENO) != 1) {
     fprintf(stderr, "stdout is not a terminal!\n");
     fflush(stderr);
+EXIT:
     return 1;
   }
 
@@ -287,27 +317,27 @@ main(int argc, char *argv[])
   int c = getopt_long(argc, argv, "aih", long_options, &option_index);
   switch (c) {
   case 'a': {
-    std::ifstream ascii_text{};
-    std::string   output{};
-    int           width = 0, height = 0;
+    const std::string ascii_path = dir + "ascii.txt";
+    int               width = 0, height = 0;
     get_terminal_size(width, height);
-    ascii_text.open(dir + "ascii.txt");
-    output = get_file_content(ascii_text, output);
     system("clear");
-    printf("%s\n", output.c_str());
+    if (!print_ascii(ascii_path).empty())
+      printf("%s\n", print_ascii(ascii_path).c_str());
+    else
+      goto EXIT;
     printf_tabbed(print_welcome(), width, 20);
     printf_tabbed(print_system_name(), width, 20);
     printf_tabbed(print_window_manager(), width, 20);
     printf_tabbed(print_terminal(), width, 20);
     printf_tabbed(print_kernel(), width, 20);
     printf_tabbed(print_shell(), width, 20);
-    ascii_text.close();
   } break;
   case 'i': {
     int               width = 0, height = 0;
     const std::string image_path = dir + "image.png";
     get_terminal_size(width, height);
-    print_image(width, height, dir);
+    if (print_image(width, height, image_path) != true)
+      goto EXIT;
     printf_tabbed(print_welcome(), width, 25);
     printf_tabbed(print_system_name(), width, 25);
     printf_tabbed(print_window_manager(), width, 25);
