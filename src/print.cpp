@@ -20,32 +20,42 @@ Print::tabbed(const std::string &str, int scale, int divider)
 bool
 Print::image(int width, int height, const std::string &imagePath)
 {
-  if (!m_fileManager->fileExists(imagePath)) {
-    fprintf(stderr, "%s does not seem to exist.\n", imagePath.c_str());
-    fflush(stderr);
-    return false;
-  }
-  constexpr int     xoffset = 2, yoffset = 0;
+  if (!m_fileManager->fileExists(imagePath + "image.png"))
+    throw std::runtime_error("image.png does not seem to exist.\n");
+
+  const std::string picture = imagePath + "image.png";
+  const std::string pictureFinal = imagePath + "image_temp.png";
+  const std::string magick =
+      "magick " + picture + " -resize 340x640 " + pictureFinal;
+  const std::string tempClean = "rm " + pictureFinal;
+  constexpr int     offsetX = 2, offsetY = 0;
+
+  if (!m_fileManager->fileExists(pictureFinal))
+    system(magick.c_str());
+
   const std::string command =
       "kitty +kitten icat --align left --place \"" + std::to_string(width) +
-      "x" + std::to_string(height) + "@" + std::to_string(xoffset) + "x" +
-      std::to_string(yoffset) + "\" \"" + imagePath + "\"";
+      "x" + std::to_string(height) + "@" + std::to_string(offsetX) + "x" +
+      std::to_string(offsetY) + "\" \"" + pictureFinal + "\"";
 
   /* clear everything before calling 'command.c_str()', so we can print our
    * necessary information later*/
   system("clear");
+
+  /* call main 'command.c_str()' */
   system(command.c_str());
+
+  /* cleanup 'magick' stuff */
+  system(tempClean.c_str());
   return true;
 }
 
 std::string
 Print::ascii(const std::string &asciiPath)
 {
-  if (!m_fileManager->fileExists(asciiPath)) {
-    fprintf(stderr, "%s does not seem to exist.\n", asciiPath.c_str());
-    fflush(stderr);
-    return "";
-  }
+  if (!m_fileManager->fileExists(asciiPath))
+    throw std::runtime_error("ascii.txt does not seem to exist.\n");
+
   std::string   output{};
   std::ifstream asciiText{};
   asciiText.open(asciiPath);
@@ -90,7 +100,6 @@ Print::systemName()
   output += m_system->getName();
   return output.c_str();
 }
-
 
 std::string
 Print::kernel()

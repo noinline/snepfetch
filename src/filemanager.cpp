@@ -21,17 +21,24 @@ FileManager::getFileContent(std::istream &s, std::string output)
 }
 
 bool
-FileManager::setDirectory(const std::string &dir)
+FileManager::setRootDirectory(const std::string &dir)
 {
   /* this-> looks ugly too but it's ok */
-    struct stat st
-    {};
-    if (stat(dir.c_str(), &st) == -1) {
-      if (mkdir(dir.c_str(), 0700) == -1)
-        return false;
-      return true;
-    }
-    return false;
+  struct stat st
+  {};
+  m_rootDirectory += dir.c_str();
+  if (stat(dir.c_str(), &st) == -1) {
+    if (mkdir(dir.c_str(), 0700) == -1)
+      return false;
+    return true;
+  }
+  return false;
+}
+
+const std::string
+FileManager::getRootDirectory()
+{
+  return m_rootDirectory;
 }
 
 bool

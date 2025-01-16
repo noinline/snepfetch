@@ -1,4 +1,3 @@
-#include <iostream>
 #include "print.h"
 #include <getopt.h>
 
@@ -13,13 +12,16 @@ EXIT:
   }
 
   std::shared_ptr<FileManager> fileManager = std::make_shared<FileManager>();
-  std::shared_ptr<System> system = std::make_shared<System>();
-    std::unique_ptr<Print> print = std::unique_ptr<Print>(
-        new Print(std::move(fileManager), std::move(system)));
-    fileManager = std::shared_ptr<FileManager>(new FileManager());
-    system = std::shared_ptr<System>(new System());
-  const std::string dir = fileManager->getHomeDirectory() + "/.config/snepfetch/";
-  fileManager->setDirectory(dir);
+  std::shared_ptr<System>      system = std::make_shared<System>();
+  std::unique_ptr<Print>       print = std::unique_ptr<Print>(
+      new Print(std::move(fileManager), std::move(system)));
+  fileManager = std::shared_ptr<FileManager>(new FileManager());
+  system = std::shared_ptr<System>(new System());
+  const std::string dir =
+      fileManager->getHomeDirectory() + "/.config/snepfetch/";
+  fileManager->setRootDirectory(dir);
+  if (fileManager->getRootDirectory().empty())
+    throw std::runtime_error("failed to set root directory. aborting...");
 
   static struct option long_options[] = {
       {"ascii", no_argument, 0, 'a'},
@@ -31,12 +33,12 @@ EXIT:
   int c = getopt_long(argc, argv, "aih", long_options, &option_index);
   switch (c) {
   case 'a': {
-    const std::string asciiPath = dir + "ascii.txt";
+    const std::string asciiPath = fileManager->getRootDirectory();
     int               width = 0, height = 0;
     system->getTerminalSize(width, height);
     std::system("clear");
-    if (!print->ascii(asciiPath).empty())
-      printf("%s\n", print->ascii(asciiPath).c_str());
+    if (!print->ascii(asciiPath + "ascii.txt").empty())
+      printf("%s\n", print->ascii(asciiPath + "ascii.txt").c_str());
     else
       goto EXIT;
     print->tabbed(print->welcome(), width, 20);
@@ -48,9 +50,9 @@ EXIT:
   } break;
   case 'i': {
     int               width = 0, height = 0;
-    const std::string image_path = dir + "image.png";
+    const std::string imagePath = fileManager->getRootDirectory();
     system->getTerminalSize(width, height);
-    if (print->image(width, height, image_path) != true)
+    if (print->image(width, height, imagePath) != true)
       goto EXIT;
     print->tabbed(print->welcome(), width, 25);
     print->tabbed(print->systemName(), width, 25);

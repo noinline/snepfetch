@@ -2,7 +2,7 @@
 
 class Print
 {
-  public:
+public:
   Print(std::shared_ptr<FileManager> fileManager,
         std::shared_ptr<System>      system)
       : m_fileManager(std::move(fileManager)), m_system(std::move(system))
