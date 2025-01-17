@@ -20,6 +20,12 @@ FileManager::getFileContent(std::istream &s, std::string output)
   return output.c_str();
 }
 
+std::string
+FileManager::getRootDirectory()
+{
+  return m_rootDirectory;
+}
+
 bool
 FileManager::setRootDirectory(const std::string &dir)
 {
@@ -33,12 +39,6 @@ FileManager::setRootDirectory(const std::string &dir)
     return true;
   }
   return false;
-}
-
-const std::string
-FileManager::getRootDirectory()
-{
-  return m_rootDirectory;
 }
 
 bool
