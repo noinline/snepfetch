@@ -138,3 +138,18 @@ System::getTerminalSize(int &width, int &height)
     height = static_cast<int>(window.ws_row);
   }();
 }
+
+void
+System::executeCommand(const std::string &command)
+{
+  return [&command]() {
+    try {
+      int exitStatus = system(command.c_str());
+      if (exitStatus != 0)
+        throw std::runtime_error(
+            command + " failed with exit code: " + std::to_string(exitStatus));
+    } catch (const std::exception &e) {
+      std::runtime_error(e.what());
+    }
+  }();
+}

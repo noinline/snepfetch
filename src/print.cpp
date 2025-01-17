@@ -3,8 +3,15 @@
 void
 Print::tabbed(const std::string &str, int scale, int divider)
 {
-  const int                tabs = scale / divider;
+  int                      tabs = scale / divider;
   std::vector<std::string> temp{};
+  
+  if (scale > 98)
+    tabs -= 1;
+  else if (scale < 49)
+    tabs += 2;
+  else if (scale > 49)
+    tabs += 1;
 
   for (int i = 0; i < tabs; ++i)
     temp.push_back("\t");
@@ -22,6 +29,8 @@ Print::image(int width, int height, const std::string &imagePath)
 {
   if (!m_fileManager->fileExists(imagePath + "image.png"))
     throw std::runtime_error("image.png does not seem to exist.\n");
+  else if (width < 46)
+    throw std::runtime_error("not enough space to correctly output image.png");
 
   const std::string picture = imagePath + "image.png";
   const std::string pictureFinal = imagePath + "image_temp.png";
@@ -29,24 +38,24 @@ Print::image(int width, int height, const std::string &imagePath)
       "magick " + picture + " -resize 340x640 " + pictureFinal;
   const std::string tempClean = "rm " + pictureFinal;
   constexpr int     offsetX = 2, offsetY = 0;
-
-  if (!m_fileManager->fileExists(pictureFinal))
-    system(magick.c_str());
-
   const std::string command =
       "kitty +kitten icat --align left --place \"" + std::to_string(width) +
       "x" + std::to_string(height) + "@" + std::to_string(offsetX) + "x" +
       std::to_string(offsetY) + "\" \"" + pictureFinal + "\"";
 
-  /* clear everything before calling 'command.c_str()', so we can print our
+  /* clear everything before calling 'command', so we can print our
    * necessary information later*/
-  system("clear");
+  m_system->executeCommand("clear");
 
-  /* call main 'command.c_str()' */
-  system(command.c_str());
+  /* create a temp image */
+  if (!m_fileManager->fileExists(pictureFinal))
+    m_system->executeCommand(magick);
+
+  /* call main 'command' */
+  m_system->executeCommand(command);
 
   /* cleanup 'magick' stuff */
-  system(tempClean.c_str());
+  m_system->executeCommand(tempClean);
   return true;
 }
 

@@ -1,4 +1,5 @@
 #include "print.h"
+
 #include <getopt.h>
 
 int
@@ -65,8 +66,10 @@ EXIT:
   case 'h':
     printf("Usage:\n	"
            "%s --ascii - prints info along with a neat ascii art.\n	"
-           "%s --image - same as --ascii but uses image.\n",
-           argv[0], argv[0]);
+           "%s --image - prints info same as --ascii but uses an image instead "
+           "of ascii art.\n	"
+           "%s --help - prints this message.\n",
+           argv[0], argv[0], argv[0]);
     break;
   default: {
     fprintf(stderr,

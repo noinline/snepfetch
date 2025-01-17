@@ -17,4 +17,5 @@ public:
   std::string getWindowManager();
   std::string getTerminalEmulator();
   void        getTerminalSize(int &width, int &height);
+  void        executeCommand(const std::string &command);
 };
