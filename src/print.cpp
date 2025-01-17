@@ -5,7 +5,7 @@ Print::tabbed(const std::string &str, int scale, int divider)
 {
   int                      tabs = scale / divider;
   std::vector<std::string> temp{};
-  
+
   if (scale > 98)
     tabs -= 1;
   else if (scale < 49)
