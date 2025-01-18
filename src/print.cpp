@@ -8,9 +8,9 @@ Print::tabbed(const std::string &str, int scale, int divider)
 
   if (scale > 98)
     tabs -= 1;
-  else if (scale < 49)
+  else if (scale <= 49)
     tabs += 2;
-  else if (scale > 49)
+  else if (scale >= 49)
     tabs += 1;
 
   for (int i = 0; i < tabs; ++i)
