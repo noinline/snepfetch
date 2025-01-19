@@ -21,7 +21,7 @@ FileManager::getFileContent(std::istream &s, std::string output)
 }
 
 std::string
-FileManager::getRootDirectory()
+FileManager::getRootDirectory(void)
 {
   return m_rootDirectory;
 }
@@ -44,8 +44,6 @@ FileManager::setRootDirectory(const std::string &dir)
 bool
 FileManager::fileExists(const std::string &dir)
 {
-  struct stat st
-  {};
-  /* 'lstat' used to check if file exists */
-  return (lstat(dir.c_str(), &st) != -1) ? true : false;
+  /* 'access' used to check if file exists */
+  return (access(dir.c_str(), F_OK) != -1) ? true : false;
 }

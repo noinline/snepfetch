@@ -31,7 +31,7 @@ System::getNodeName(void)
 {
   struct utsname buffer;
   return (uname(&buffer) != 0)
-             ? throw std::runtime_error("failed to get node name.\n")
+             ? throw std::runtime_error("failed to get nodename.\n")
              : std::string(buffer.nodename);
   /* returns user's hostname */
 }
@@ -114,6 +114,56 @@ System::getWindowManager(void)
   }
 
   return "unknown";
+}
+
+std::string
+System::getPackageManager(void)
+{
+  const char *packageManagers[] = {
+      "/usr/bin/apt",    "/usr/bin/apk",  "/usr/bin/qlist",
+      "/usr/bin/snap",   "/usr/bin/guix", "/usr/bin/nix-store",
+      "/usr/bin/pacman", "/usr/bin/pkg",  "/usr/bin/port",
+      "/usr/bin/brew",   "/usr/bin/rpm",  "/usr/bin/xbps-query"};
+
+  /*
+   * this is going to be used for package count later
+   *
+    const char *commands[] = {
+        "apt list --installed | wc -l",
+        "apk info | wc -l",
+        "qlist -I | wc -l",
+        "flatpak list | wc -l",
+        "snap list | wc -l",
+        "guix package --list-installed | wc -l",
+        "nix-store -q --requisites /run/current-system/sw | wc -l",
+        "pacman -Qq | wc -l",
+        "pkg info | wc -l",
+        "port installed | tail +2 | wc -l",
+        "brew --cellar | wc -l",
+        "brew --caskroom | wc -l",
+        "rpm -qa --last | wc -l",
+        "xbps-query -l | wc -l"};
+  */
+
+  const char *names[] = {"apt",       "apk",    "emerge", "snap", "guix",
+                         "nix",       "pacman", "pkg",    "port", "brew-cellar",
+                         "brew-cask", "rpm",    "xbps"};
+
+  std::string output{};
+  std::string packageManager{};
+  for (size_t i = 0; i < sizeof(packageManagers) / sizeof(packageManagers[0]);
+       ++i)
+  {
+    if (!m_fileManager->fileExists(packageManagers[i]))
+      continue;
+
+    packageManager += packageManagers[i];
+
+    if (packageManager.find(names[i]) != std::string::npos)
+      output += names[i];
+  }
+
+  return (!output.empty()) ? output.c_str() : "unknown";
 }
 
 std::string

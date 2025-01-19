@@ -74,7 +74,7 @@ Print::ascii(const std::string &asciiPath)
 }
 
 std::string
-Print::welcome()
+Print::welcome(void)
 {
   std::string output{"Welcome"};
   output += " ";
@@ -84,7 +84,7 @@ Print::welcome()
 }
 
 std::string
-Print::terminal()
+Print::terminal(void)
 {
   std::string output{" >"};
   output += " ";
@@ -93,7 +93,7 @@ Print::terminal()
 }
 
 std::string
-Print::shell()
+Print::shell(void)
 {
   std::string output{" >"};
   output += " ";
@@ -102,7 +102,7 @@ Print::shell()
 }
 
 std::string
-Print::systemName()
+Print::systemName(void)
 {
   std::string output{" >"};
   output += " ";
@@ -111,7 +111,7 @@ Print::systemName()
 }
 
 std::string
-Print::kernel()
+Print::kernel(void)
 {
   std::string output{" >"};
   output += " ";
@@ -120,10 +120,19 @@ Print::kernel()
 }
 
 std::string
-Print::windowManager()
+Print::windowManager(void)
 {
   std::string output{" >"};
   output += " ";
   output += m_system->getWindowManager();
+  return output.c_str();
+}
+
+std::string
+Print::packageManager(void)
+{
+  std::string output{" >"};
+  output += " ";
+  output += m_system->getPackageManager();
   return output.c_str();
 }

@@ -13,11 +13,16 @@ EXIT:
   }
 
   std::shared_ptr<FileManager> fileManager = std::make_shared<FileManager>();
-  std::shared_ptr<System>      system = std::make_shared<System>();
-  std::unique_ptr<Print>       print = std::unique_ptr<Print>(
+  std::unique_ptr<System>      system =
+      std::unique_ptr<System>(new System(std::move(fileManager)));
+  fileManager = std::shared_ptr<FileManager>(new FileManager());
+  std::unique_ptr<Print> print = std::unique_ptr<Print>(
       new Print(std::move(fileManager), std::move(system)));
   fileManager = std::shared_ptr<FileManager>(new FileManager());
-  system = std::shared_ptr<System>(new System());
+  system = std::unique_ptr<System>(new System(std::move(fileManager)));
+  fileManager = std::shared_ptr<FileManager>(new FileManager());
+  /* this is so stupid ^^^^^^^^ sob_emoji */
+
   const std::string dir =
       fileManager->getHomeDirectory() + "/.config/snepfetch/";
   fileManager->setRootDirectory(dir);
@@ -58,6 +63,7 @@ EXIT:
     print->tabbed(print->welcome(), width, 25);
     print->tabbed(print->systemName(), width, 25);
     print->tabbed(print->windowManager(), width, 25);
+    print->tabbed(print->packageManager(), width, 25);
     print->tabbed(print->terminal(), width, 25);
     print->tabbed(print->kernel(), width, 25);
     print->tabbed(print->shell(), width, 25);
