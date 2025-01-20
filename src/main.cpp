@@ -79,7 +79,7 @@ EXIT:
     break;
   default: {
     fprintf(stderr,
-            "Invalid/No argument specified! Consider using %s --help.\n",
+            "invalid/no argument specified! consider using %s --help.\n",
             argv[0]);
     fflush(stderr);
   } break;

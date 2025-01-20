@@ -1,6 +1,7 @@
 #pragma once
 #include "filemanager.h"
 #include "includes.h"
+
 class System
 {
 public:
@@ -14,6 +15,7 @@ public:
   std::string getKernelVersion();
   std::string getWindowManager();
   std::string getPackageManager();
+  std::string getPackageCount();
   std::string getTerminalEmulator();
   void        getTerminalSize(int &width, int &height);
   void        executeCommand(const std::string &command);

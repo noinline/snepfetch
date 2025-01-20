@@ -125,26 +125,6 @@ System::getPackageManager(void)
       "/usr/bin/pacman", "/usr/bin/pkg",  "/usr/bin/port",
       "/usr/bin/brew",   "/usr/bin/rpm",  "/usr/bin/xbps-query"};
 
-  /*
-   * this is going to be used for package count later
-   *
-    const char *commands[] = {
-        "apt list --installed | wc -l",
-        "apk info | wc -l",
-        "qlist -I | wc -l",
-        "flatpak list | wc -l",
-        "snap list | wc -l",
-        "guix package --list-installed | wc -l",
-        "nix-store -q --requisites /run/current-system/sw | wc -l",
-        "pacman -Qq | wc -l",
-        "pkg info | wc -l",
-        "port installed | tail +2 | wc -l",
-        "brew --cellar | wc -l",
-        "brew --caskroom | wc -l",
-        "rpm -qa --last | wc -l",
-        "xbps-query -l | wc -l"};
-  */
-
   const char *names[] = {"apt",       "apk",    "emerge", "snap", "guix",
                          "nix",       "pacman", "pkg",    "port", "brew-cellar",
                          "brew-cask", "rpm",    "xbps"};
@@ -163,6 +143,54 @@ System::getPackageManager(void)
       output += names[i];
   }
 
+  return (!output.empty()) ? output.c_str() : "unknown";
+}
+
+std::string
+System::getPackageCount(void)
+{
+  const char *listCommands[] = {
+      "apt list --installed | wc -l\n",
+      "apk info | wc -l\n",
+      "qlist -I | wc -l\n",
+      "flatpak list | wc -l\n",
+      "snap list | wc -l\n",
+      "guix package --list-installed | wc -l\n",
+      "nix-store -q --requisites /run/current-system/sw | wc -l\n",
+      "pacman -Qq | wc -l\n",
+      "pkg info | wc -l\n",
+      "port installed | tail +2 | wc -l\n",
+      "brew --cellar | wc -l\n",
+      "brew --caskroom | wc -l\n",
+      "rpm -qa --last | wc -l\n",
+      "xbps-query -l | wc -l\n"};
+
+  const std::string packageManager = getPackageManager();
+  std::string tempCommand{}, command{}, output{}, temp{};
+  for (size_t i = 0; i < sizeof(listCommands) / sizeof(listCommands[0]); ++i) {
+    tempCommand += listCommands[i];
+
+    if (tempCommand.find(packageManager) != std::string::npos)
+    {
+      command += listCommands[i];
+      break;
+    }
+    else
+      continue;
+  }
+
+  FILE *pipe = popen(command.c_str(), "r");
+  if (!pipe)
+    return "";
+
+  while (!feof(pipe)) {
+    char buffer[128];
+    if (fgets(buffer, sizeof(buffer), pipe) != NULL)
+      temp += buffer;
+  }
+  pclose(pipe);
+
+    output += std::to_string(std::stoi(temp));
   return (!output.empty()) ? output.c_str() : "unknown";
 }
 

@@ -134,5 +134,8 @@ Print::packageManager(void)
   std::string output{" >"};
   output += " ";
   output += m_system->getPackageManager();
+  output += " (";
+  output += m_system->getPackageCount();
+  output += ")";
   return output.c_str();
 }
